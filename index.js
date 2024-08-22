@@ -28,6 +28,10 @@ const port = process.env.SERVERPORT;
 const InvoiceRoutes = require('./src/routes/invoice.route')
 app.use('/invoice', InvoiceRoutes);
 
+app.get('/', (req, res) => {
+    res.send('Hello World');
+});
+
 // listen to the port
 app.listen(port, () => {
     console.log(`Express is running at port ${port}`);
