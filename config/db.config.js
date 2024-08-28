@@ -10,15 +10,27 @@ const dbConn = mysql.createConnection({
     connectTimeout: 50000 // Set this to a higher value, e.g., 10000ms (10 seconds)
 });
 
-dbConn.connect(function (error) {
-    if (error) {
-        console.error('error connecting:' + error.stack);
-        process.exit(1);
-    }
-    else {
-        console.log('DB connected successfully');
-    }
+const maxRetries = 5; // Maximum number of retry attempts
+let retryCount = 0;
 
-});
+function connectWithRetry() {
+    dbConn.connect(function (error) {
+        if (error) {
+            console.error('Error connecting: ' + error.stack);
+            retryCount++;
+            if (retryCount < maxRetries) {
+                console.log(`Retrying connection (${retryCount}/${maxRetries})...`);
+                setTimeout(connectWithRetry, 2000); // Wait 2 seconds before retrying
+            } else {
+                console.error('Max retries reached. Exiting process.');
+                process.exit(1);
+            }
+        } else {
+            console.log('DB connected successfully');
+        }
+    });
+}
+
+connectWithRetry();
 
 module.exports = dbConn;
