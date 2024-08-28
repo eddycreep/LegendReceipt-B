@@ -6,7 +6,8 @@ const dbConn = mysql.createConnection({
     port: process.env.PORT,
     user: process.env.USER,
     password: process.env.PASSWORD,
-    database: process.env.DATABASE
+    database: process.env.DATABASE,
+    connectTimeout: 10000 // Set this to a higher value, e.g., 10000ms (10 seconds)
 });
 
 dbConn.connect(function (error) {
