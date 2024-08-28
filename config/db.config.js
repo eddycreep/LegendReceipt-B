@@ -10,7 +10,7 @@ const dbConn = mysql.createConnection({
     connectTimeout: 50000 // Set this to a higher value, e.g., 10000ms (10 seconds)
 });
 
-const maxRetries = 5; // Maximum number of retry attempts
+const maxRetries = 20; // Maximum number of retry attempts
 let retryCount = 0;
 
 function connectWithRetry() {
