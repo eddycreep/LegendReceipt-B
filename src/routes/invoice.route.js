@@ -5,6 +5,6 @@ const InvoiceController = require('../controllers/invoice.controller');
 
 require('dotenv').config({ path: './configuration.env' });
 
-router.get('/getreceiptdata/:docnum', InvoiceController.getReceiptData);
+router.get('/getreceiptdata/:docnum', InvoiceController.getReceiptData); //test
 
 module.exports = router;
