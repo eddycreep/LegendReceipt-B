@@ -11,7 +11,7 @@ var Invoice = function (user) {
 };
 
 Invoice.getReceiptData = (req, result) => {
-    dbConn.query('SELECT l.doc_number, l.description, l.incl_price, l.incl_line_total, l.tax, l.sale_date, m.description As store_name, m.address_1, m.address_2, m.address_3, m.address_4, m.address_5, m.address_6, m.address_7, c.Description As customer_name, p.com_logo FROM erp_ho_demo.tblsaleslines l JOIN erp_ho_demo.tblmultistore m ON l.store=m.code JOIN erp_ho_demo.tblcustomers c ON l.customer=c.Code JOIN erp_ho_demo.tblparameters p WHERE doc_number= ?', [req.params.docnum], (err, res) => {
+    dbConn.query('SELECT l.doc_number, l.description, l.incl_price, l.incl_line_total, l.tax, l.sale_date, m.description As store_name, m.address_1, m.address_2, m.address_3, m.address_4, m.address_5, m.address_6, m.address_7, c.Description As customer_name, p.com_logo FROM bit_drywall_erp.tblsaleslines l JOIN bit_drywall_erp.tblmultistore m ON l.store=m.code JOIN bit_drywall_erp.tblcustomers c ON l.customer=c.Code JOIN bit_drywall_erp.tblparameters p WHERE doc_number= ?', [req.params.docnum], (err, res) => {
         if (!(err === null)) {
             console.log('Error while getting receipt data: ' + err);
             result(null, err)
