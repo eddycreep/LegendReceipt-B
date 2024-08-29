@@ -8,39 +8,50 @@ function createNewConnection() {
         user: process.env.USER,
         password: process.env.PASSWORD,
         database: process.env.DATABASE,
-        connectTimeout: 120000 // Increased timeout to 2 minutes
+        connectTimeout: 120000 // 2 minutes timeout
     });
 }
 
-let dbConn = createNewConnection();
+let dbConn;
 
-const maxRetries = 20; // Maximum number of retry attempts
-let retryCount = 0;
+function connectWithRetry(retryCount = 0, maxRetries = 20) {
+    if (retryCount >= maxRetries) {
+        console.error('Max retries reached. Exiting process.');
+        process.exit(1);
+    }
 
-function connectWithRetry() {
-    dbConn.connect(function (error) {
+    dbConn = createNewConnection();
+
+    dbConn.connect((error) => {
         if (error) {
             console.error('Error connecting: ' + error.stack);
-            retryCount++;
-            if (retryCount < maxRetries) {
-                console.log(`Retrying connection (${retryCount}/${maxRetries})...`);
-                
-                // Close the previous connection before retrying
+
+            if (error.fatal) {
+                console.log('Fatal error occurred, closing connection and retrying...');
                 dbConn.end(() => {
-                    dbConn = createNewConnection(); // Create a new connection instance
-                    setTimeout(connectWithRetry, 2000); // Wait 2 seconds before retrying
+                    setTimeout(() => connectWithRetry(retryCount + 1, maxRetries), 2000);
                 });
             } else {
-                console.error('Max retries reached. Exiting process.');
-                process.exit(1);
+                console.log(`Non-fatal error, retrying connection (${retryCount}/${maxRetries})...`);
+                setTimeout(() => connectWithRetry(retryCount + 1, maxRetries), 2000);
             }
         } else {
             console.log('DB connected successfully');
         }
     });
+
+    dbConn.on('error', (err) => {
+        console.error('MySQL connection error:', err);
+        if (err.fatal) {
+            console.log('Fatal error occurred, retrying...');
+            dbConn.end(() => {
+                connectWithRetry(retryCount + 1, maxRetries);
+            });
+        }
+    });
 }
 
-// Initiate the connection process with retry logic
+// Initial call to establish the connection
 connectWithRetry();
 
 module.exports = dbConn;
