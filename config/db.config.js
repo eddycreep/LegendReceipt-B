@@ -7,7 +7,7 @@ const dbConn = mysql.createConnection({
     user: process.env.USER,
     password: process.env.PASSWORD,
     database: process.env.DATABASE,
-    connectTimeout: 50000 // Set this to a higher value, e.g., 10000ms (10 seconds)
+    connectTimeout: 120000 // Timeout set to 120 seconds (2 minutes)
 });
 
 const maxRetries = 20; // Maximum number of retry attempts
