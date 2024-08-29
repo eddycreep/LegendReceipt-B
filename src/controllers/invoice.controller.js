@@ -5,7 +5,7 @@ exports.getReceiptData = (req, res) => {
     if (err) {
       user.message = "Failed";
       res.send(err);
-      process.exit(1);
+      return res.status(500).send(err);
     }
     user.message = "Success";
     res.send(user);
