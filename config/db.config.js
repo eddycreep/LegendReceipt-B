@@ -26,8 +26,8 @@ function connectWithRetry(retryCount = 0, maxRetries = 20) {
         if (error) {
             console.error('Error connecting: ' + error.stack);
 
-            if (error.fatal) {
-                console.log('Fatal error occurred, closing connection and retrying...');
+            if (error) {
+                console.log('An error occurred, closing connection and retrying...');
                 dbConn.end(() => {
                     setTimeout(() => connectWithRetry(retryCount + 1, maxRetries), 2000);
                 });
