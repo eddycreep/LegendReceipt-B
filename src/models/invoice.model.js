@@ -33,5 +33,18 @@ Invoice.getInvoiceData = (req, result) => {
 }
 
 
+Invoice.getInvoiceAddressData = (req, result) => {
+    dbConn.query('SELECT m.description AS store_name, m.address_1, m.address_2, m.address_3, m.address_4, m.address_5, m.address_6, m.address_7 FROM bit_drywall_erp.tblsaleslines l JOIN bit_drywall_erp.tblmultistore m ON l.store = m.code WHERE doc_number = ? LIMIT 1', [req.params.doc_number], (err, res) => {
+        if (!(err === null)) {
+            console.log('Error while fetching the invoice address data: ' + err);
+            result(null, err)
+        } else {
+            console.log(res, 'Invoice Address Data Result: ');
+            result(null, res); 
+        }
+    })
+}
+
+
 module.exports = Invoice;
 
