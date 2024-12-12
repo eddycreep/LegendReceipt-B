@@ -1,57 +1,62 @@
 const mysql = require('mysql');
 require('dotenv').config({ path: './configuration.env' });
 
-function createNewConnection() {
-    return mysql.createConnection({
-        host: process.env.HOST,
-        port: process.env.PORT,
-        user: process.env.USER,
-        password: process.env.PASSWORD,
-        database: process.env.DATABASE,
-        connectTimeout: 120000 // 2 minutes timeout
-    });
-}
+/**
+ * Create a MySQL connection pool with a specified timeout and other configurations.
+ * A pool manages multiple connections efficiently and is recommended for production environments.
+ */
+const pool = mysql.createPool({
+    connectionLimit: 10, // Maximum number of connections in the pool
+    host: process.env.HOST,
+    port: process.env.PORT,
+    user: process.env.USER,
+    password: process.env.PASSWORD,
+    database: process.env.DATABASE,
+    connectTimeout: 120000, // 2 minutes timeout
+});
 
-let dbConn;
-
+/**
+ * Helper function to establish a connection with retries if it fails.
+ * @param {number} retryCount - Current retry attempt.
+ * @param {number} maxRetries - Maximum number of retry attempts.
+ */
 function connectWithRetry(retryCount = 0, maxRetries = 20) {
     if (retryCount >= maxRetries) {
         console.error('Max retries reached. Exiting process.');
         process.exit(1);
     }
 
-    dbConn = createNewConnection();
-
-    dbConn.connect((error) => {
+    // Test a connection from the pool
+    pool.getConnection((error, connection) => {
         if (error) {
-            console.error('Error connecting: ' + error.stack);
+            console.error('Error getting connection from pool: ' + error.stack);
 
-            if (error) {
-                console.log('An error occurred, closing connection and retrying...');
-                dbConn.end(() => {
-                    setTimeout(() => connectWithRetry(retryCount + 1, maxRetries), 2000);
-                });
-            } else {
-                console.log(`Non-fatal error, retrying connection (${retryCount}/${maxRetries})...`);
-                setTimeout(() => connectWithRetry(retryCount + 1, maxRetries), 2000);
-            }
+            // Retry logic for fatal or recoverable errors
+            console.log(`Retrying connection (${retryCount + 1}/${maxRetries})...`);
+            setTimeout(() => connectWithRetry(retryCount + 1, maxRetries), 2000);
         } else {
             console.log('DB connected successfully');
+
+            // Release the connection back to the pool after a successful test
+            connection.release();
         }
     });
 
-    dbConn.on('error', (err) => {
-        console.error('MySQL connection error:', err);
+    // Handle pool errors
+    pool.on('error', (err) => {
+        console.error('MySQL pool error:', err);
         if (err.fatal) {
-            console.log('Fatal error occurred, retrying...');
-            dbConn.end(() => {
-                connectWithRetry(retryCount + 1, maxRetries);
-            });
+            console.log('Fatal error occurred, retrying connection...');
+            setTimeout(() => connectWithRetry(retryCount + 1, maxRetries), 2000);
         }
     });
 }
 
-// Initial call to establish the connection
+// Initial call to test the pool connection and establish retries if necessary
 connectWithRetry();
 
-module.exports = dbConn;
+/**
+ * Export the pool object for use throughout the application.
+ * Use `pool.query` or `pool.getConnection` for database operations.
+ */
+module.exports = pool;
