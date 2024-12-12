@@ -1,13 +1,13 @@
 const InvoiceModel = require('../models/invoice.model');
 
-exports.getReceiptData = (req, res) => {
-  InvoiceModel.getReceiptData(req, (err, user) => {
+exports.getInvoiceData = (req, res) => {
+  InvoiceModel.getInvoiceData(req, (err, user) => {
     if (err) {
-      user.message = "Failed";
+      user.message = "Get Invoice Data - Failed";
       res.send(err);
-      return res.status(500).send(err);
+      process.exit(1);
     }
-    user.message = "Success";
+    user.message = "Get Invoice Data - Success";
     res.send(user);
   })
 }
