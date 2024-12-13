@@ -1,4 +1,4 @@
-const mysql = require('mysql');
+const mysql = require('mysql2/promise');
 require('dotenv').config({ path: './configuration.env' });
 
 /**
@@ -6,14 +6,19 @@ require('dotenv').config({ path: './configuration.env' });
  * A pool manages multiple connections efficiently and is recommended for production environments.
  */
 const pool = mysql.createPool({
-    connectionLimit: 10, // Maximum number of connections in the pool
     host: process.env.HOST,
-    port: process.env.PORT,
     user: process.env.USER,
     password: process.env.PASSWORD,
     database: process.env.DATABASE,
-    connectTimeout: 120000, // 2 minutes timeout
+    waitForConnections: true,
+    connectionLimit: 1, // Reduce connection limit to 1 for serverless functions
+    queueLimit: 0,
+    ssl: {
+        rejectUnauthorized: false
+    },
+    connectTimeout: 10000, // Set a reasonable connection timeout (in ms)
 });
+
 
 /**
  * Helper function to establish a connection with retries if it fails.
