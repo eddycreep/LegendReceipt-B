@@ -3,15 +3,17 @@ require('dotenv').config({ path: './configuration.env' });
 
 // Create a pool of connections
 const pool = mysql.createPool({
-    host: process.env.HOST,        // Database host from environment variables
-    port: process.env.PORT,        // Database port from environment variables
-    user: process.env.USER,        // Database user from environment variables
-    password: process.env.PASSWORD, // Database password from environment variables
-    database: process.env.DATABASE, // Database name from environment variables
-    waitForConnections: true,      // Ensure requests queue if all connections are busy
-    connectionLimit: 10,           // Maximum number of connections in the pool
-    queueLimit: 0,                 // No limit to the number of queued connection requests
-    connectTimeout: 120000         // 2 minutes timeout for connections
+    host: process.env.HOST,
+    user: process.env.USER,
+    password: process.env.PASSWORD,
+    database: process.env.DATABASE,
+    waitForConnections: true,
+    connectionLimit: 1, // Reduce connection limit to 1 for serverless functions
+    queueLimit: 0,
+    ssl: {
+        rejectUnauthorized: false
+    },
+    connectTimeout: 10000, // Set a reasonable connection timeout (in ms)
 });
 
 // Helper function to handle retries when a connection fails
