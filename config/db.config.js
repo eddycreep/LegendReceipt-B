@@ -1,41 +1,59 @@
-const mysql = require('mysql2'); // Updated to use 'mysql2' package for better performance and promise support
+const mysql = require('mysql2');
 require('dotenv').config({ path: './configuration.env' });
 
-// Create a pool of connections
-const dbConn = mysql.createPool({
-    host: process.env.HOST,
-    port: process.env.PORT,
-    user: process.env.USER,
-    password: process.env.PASSWORD,
-    database: process.env.DATABASE,
-    connectTimeout: 10000, // Reduced timeout for faster failure detection
-    waitForConnections: true,
-    connectionLimit: 15, // Increased connection limit for better concurrency
-    queueLimit: 0, // No limit on request queuing
+const dbConn = mysql.createConnection({
+        host: process.env.HOST,
+        port: process.env.PORT,
+        user: process.env.USER,
+        password: process.env.PASSWORD,
+        database: process.env.DATABASE,
+        connectTimeout: 120000 // 2 minutes timeout
 });
 
-
-// Function to test database connection with retries
-async function testDbConnection(retries = 5) {
-    for (let attempt = 1; attempt <= retries; attempt++) {
-        try {
-            const connection = await dbConn.promise().getConnection();
-            console.log('DB connected successfully');
-            connection.release(); // Release the connection back to the pool
-            return;
-        } catch (error) {
-            console.error(`Attempt ${attempt} failed:`, error.message);
-            if (attempt === retries) {
-                console.error('Max retries reached. Exiting...');
-                process.exit(1);
-            }
-            console.log(`Retrying connection in ${attempt} seconds...`);
-            await new Promise(resolve => setTimeout(resolve, attempt * 1000)); // Exponential backoff
-        }
+function connectWithRetry(retryCount = 0, maxRetries = 20) {
+    console.log('DATABASE CONNECTION: ', {
+        host: process.env.HOST,
+        port: process.env.PORT,
+        user: process.env.USER,
+        password: process.env.PASSWORD,
+        database: process.env.DATABASE,
+    })
+    
+    if (retryCount >= maxRetries) {
+        console.error('Max retries reached. Exiting process.');
+        process.exit(1);
     }
+
+    dbConn.connect((error) => {
+        if (error) {
+            console.error('Error connecting: ' + error.stack);
+
+            if (error) {
+                console.log('An error occurred, closing connection and retrying...');
+                dbConn.end(() => {
+                    setTimeout(() => connectWithRetry(retryCount + 1, maxRetries), 2000);
+                });
+            } else {
+                console.log(`Non-fatal error, retrying connection (${retryCount}/${maxRetries})...`);
+                setTimeout(() => connectWithRetry(retryCount + 1, maxRetries), 2000);
+            }
+        } else {
+            console.log('DB connected successfully');
+        }
+    });
+
+    dbConn.on('error', (err) => {
+        console.error('MySQL connection error:', err);
+        if (err.fatal) {
+            console.log('Fatal error occurred, retrying...');
+            dbConn.end(() => {
+                connectWithRetry(retryCount + 1, maxRetries);
+            });
+        }
+    });
 }
 
-// Call the function to test the database connection
-testDbConnection();
+// Initial call to establish the connection
+connectWithRetry();
 
 module.exports = dbConn;
