@@ -9,9 +9,9 @@ const dbPool = mysql.createPool({
     password: process.env.PASSWORD,    
     database: process.env.DATABASE,
     waitForConnections: true,           // Enable connection queuing when the pool is exhausted
-    connectionLimit: 10,                // Limit the number of simultaneous connections in the pool
+    connectionLimit: 1,                // Limit the number of simultaneous connections in the pool
     queueLimit: 0,                      // Unlimited request queuing
-    connectTimeout: 120000,              // Timeout for establishing a new connection (10 seconds)
+    connectTimeout: 60000,              // Timeout for establishing a new connection (10 seconds)
 });
 
 // Helper function to test the connection
