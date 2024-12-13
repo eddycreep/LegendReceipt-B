@@ -1,26 +1,27 @@
-const mysql = require('mysql2'); // Updated to use 'mysql2' package for better performance and promise support
+const mysql = require('mysql2');
 require('dotenv').config({ path: './configuration.env' });
 
-// Create a pool of connections
+
 const pool = mysql.createPool({
     host: process.env.HOST,
     user: process.env.USER,
     password: process.env.PASSWORD,
     database: process.env.DATABASE,
     waitForConnections: true,
-    connectionLimit: 1, // Reduce connection limit to 1 for serverless functions
+    connectionLimit: 1,
     queueLimit: 0,
     ssl: {
         rejectUnauthorized: false
     },
-    connectTimeout: 10000, // Set a reasonable connection timeout (in ms)
+    connectTimeout: 120000,
 });
+
 
 // Helper function to handle retries when a connection fails
 function connectWithRetry(retryCount = 0, maxRetries = 5) {
     if (retryCount >= maxRetries) {
         console.error('Max retries reached. Exiting process.');
-        process.exit(1); // Exit if retries exceed the maximum
+        process.exit(1); 
     }
 
     pool.getConnection((err, connection) => {
@@ -36,8 +37,8 @@ function connectWithRetry(retryCount = 0, maxRetries = 5) {
     });
 }
 
-// Initial call to establish a test connection with retry logic
+
 connectWithRetry();
 
-// Export the pool for reuse across the app
+
 module.exports = pool;
