@@ -12,7 +12,6 @@ exports.getInvoiceData = (req, res) => {
   })
 }
 
-
 exports.getInvoiceAddressData = (req, res) => {
   InvoiceModel.getInvoiceAddressData(req, (err, user) => {
     if (err) {

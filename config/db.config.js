@@ -8,8 +8,12 @@ const dbConn = mysql.createPool({
     user: process.env.USER,
     password: process.env.PASSWORD,
     database: process.env.DATABASE,
-    connectTimeout: 120000
+    connectTimeout: 10000, // Reduced timeout for faster failure detection
+    waitForConnections: true,
+    connectionLimit: 15, // Increased connection limit for better concurrency
+    queueLimit: 0, // No limit on request queuing
 });
+
 
 // Function to test database connection with retries
 async function testDbConnection(retries = 5) {
