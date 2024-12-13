@@ -1,45 +1,51 @@
 const mysql = require('mysql2');
 require('dotenv').config({ path: './configuration.env' });
 
-
-const dbPool = mysql.createPool({
-    host: process.env.HOST,             
-    port: process.env.PORT,        
-    user: process.env.USER,        
-    password: process.env.PASSWORD,    
+// Create a connection pool with updated settings
+const pool = mysql.createPool({
+    host: process.env.HOST,
+    user: process.env.USER,
+    password: process.env.PASSWORD,
     database: process.env.DATABASE,
-    waitForConnections: true,           // Enable connection queuing when the pool is exhausted
-    connectionLimit: 10,                // Limit the number of simultaneous connections in the pool
-    queueLimit: 0,                      // Unlimited request queuing
-    connectTimeout: 10000,              // Timeout for establishing a new connection (10 seconds)
+    waitForConnections: true, // Enable queueing if all connections are in use
+    connectionLimit: 5,       // Increase the pool size to handle more connections simultaneously
+    queueLimit: 0,            // No limit on the number of queued requests
+    ssl: {
+        rejectUnauthorized: false, // Allow self-signed SSL certificates
+    },
+    connectTimeout: 60000,    // Increase connection timeout to 60 seconds
 });
 
-// Helper function to test the connection
-dbPool.getConnection((err, connection) => {
-    console.log('DATABASE CONNECTION: ', {
+// Helper function to retry database connection with exponential backoff
+function connectWithRetry(retryCount = 0, maxRetries = 5) {
+    console.log('DATABSE CONNECTION:', {
         "HOST": process.env.HOST,
-        "PORT": process.env.PORT,
         "USER": process.env.USER,
         "PASSWORD": process.env.PASSWORD,
         "DATABASE": process.env.DATABASE,
-        "state": connection? 'connected' : 'disconnected'
     })
-
     
-    if (err) {
-        // Handle specific error types for better debugging
-        if (err.code === 'ETIMEDOUT') {
-            console.error('Error: Connection to the database timed out.');
-        } else if (err.code === 'ECONNREFUSED') {
-            console.error('Error: Connection to the database was refused.');
-        } else {
-            console.error('Error connecting to the database:', err.stack);
-        }
-        process.exit(1); // Exit the process on a fatal connection error
-    } else {
-        console.log('Database connected successfully.');
-        connection.release(); // Release the connection back to the pool
+    if (retryCount >= maxRetries) {
+        console.error('Max retries reached. Exiting process.');
+        process.exit(1); // Exit the process if maximum retries are reached
     }
-});
 
-module.exports = dbPool;
+    pool.getConnection((err, connection) => {
+        if (err) {
+            console.error(`Error connecting to database (Attempt ${retryCount + 1}/${maxRetries}):`, err);
+
+            // Retry after a delay (exponential backoff)
+            const delay = Math.pow(2, retryCount) * 1000; // e.g., 2s, 4s, 8s...
+            console.log(`Retrying connection in ${delay / 1000} seconds...`);
+            setTimeout(() => connectWithRetry(retryCount + 1, maxRetries), delay);
+        } else {
+            console.log('Database connected successfully.');
+            connection.release(); // Release the connection back to the pool
+        }
+    });
+}
+
+// Initialize database connection with retries
+connectWithRetry();
+
+module.exports = pool;
