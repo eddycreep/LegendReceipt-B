@@ -1,7 +1,7 @@
 const mysql = require('mysql2');
-require('dotenv').config({ path: './configuration.env' }); // Corrected file path
+require('dotenv').config({ path: './configuration.env' });
 
-// Create a MySQL connection pool for better performance and scalability
+
 const dbPool = mysql.createPool({
     host: process.env.HOST,             
     port: process.env.PORT,        
