@@ -1,4 +1,4 @@
-const mysql = require('mysql2');
+const mysql = require('mysql');
 require('dotenv').config({ path: './configuration.env' });
 
 // Create a connection pool with optimized settings
